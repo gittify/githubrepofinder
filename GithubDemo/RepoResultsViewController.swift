@@ -10,16 +10,20 @@ import UIKit
 import MBProgressHUD
 
 // Main ViewController
-class RepoResultsViewController: UIViewController {
+class RepoResultsViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
 
+    @IBOutlet weak var tableView: UITableView!
+    
     var searchBar: UISearchBar!
     var searchSettings = GithubRepoSearchSettings()
-
-    var repos: [GithubRepo]!
+    var repos: [GithubRepo]! = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        tableView.dataSource = self
+        tableView.delegate = self
+        
         // Initialize the UISearchBar
         searchBar = UISearchBar()
         searchBar.delegate = self
@@ -41,14 +45,34 @@ class RepoResultsViewController: UIViewController {
         GithubRepo.fetchRepos(searchSettings, successCallback: { (newRepos) -> Void in
 
             // Print the returned repositories to the output window
+            self.repos = newRepos
             for repo in newRepos {
                 print(repo)
-            }   
+            }
+            self.tableView.reloadData()
 
             MBProgressHUD.hide(for: self.view, animated: true)
             }, error: { (error) -> Void in
                 print(error)
         })
+    }
+    
+    public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return self.repos.count
+    }
+
+    public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "RepoCell") as! RepoCellTableViewCell
+        let imageUrlString = self.repos[indexPath.row].ownerAvatarURL as String!
+        if let imgURL = URL(string: imageUrlString!) {
+            cell.avatarImageView.setImageWith(imgURL)
+        }
+        cell.nameLabel.text = self.repos[indexPath.row].name as String!
+        cell.descriptionLabel.text = self.repos[indexPath.row].repoDescription as String!
+        cell.ownerLabel.text = self.repos[indexPath.row].ownerHandle as String!
+        cell.starLabel.text = "\(self.repos[indexPath.row].stars!)"
+        cell.forksLabel.text = "\(self.repos[indexPath.row].forks!)"
+        return cell
     }
 }
 
